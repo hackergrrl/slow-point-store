@@ -2,6 +2,7 @@ var fs = require('fs')
 var path = require('path')
 var mkdirp = require('mkdirp')
 var builtinTypes = require('comparable-storable-types')
+var Readable = require('stream').Readable
 
 module.exports = FixedGridPointStore
 
@@ -28,8 +29,8 @@ FixedGridPointStore.prototype.insert = function (pt, value, cb) {
   if (!Array.isArray(pt) || pt.length !== 2) throw new Error('param "pt" must be a 2d array')
 
   // lat/lon to tile x/y
-  var y = latToMercator(pt[0])
-  var x = lonToMercator(pt[1])
+  var y = latToMercator(pt[0], this.mapSize)
+  var x = lonToMercator(pt[1], this.mapSize)
 
   // check bounds
   if (x < 0 || x > this.mapSize || y < 0 || y > this.mapSize) {
@@ -51,14 +52,81 @@ FixedGridPointStore.prototype.insert = function (pt, value, cb) {
 }
 
 FixedGridPointStore.prototype.queryStream = function (q, opts) {
+  var self = this
+
+  var topLeftY = latToMercator(q[0][0], this.mapSize)
+  var topLeftX = lonToMercator(q[0][1], this.mapSize)
+  var bottomRightY = latToMercator(q[1][0], this.mapSize)
+  var bottomRightX = lonToMercator(q[1][1], this.mapSize)
+
+  var y = topLeftY
+  var x = topLeftX
+
+  var stream = new Readable({ objectMode: true })
+  var done = false
+  var pending = 1
+
+  // read one point file at a time
+  stream._read = function () {
+    if (done) return
+
+    var myX = x
+    var myY = y
+    var filename = path.join(self.dir, myY + ',' + myX)
+      console.log(filename)
+    nextPoint()
+
+    pending++
+    fs.readFile(filename, 'binary', function (err, data) {
+      if (err && err.code === 'ENOENT') {
+        pending--
+        return stream._read()
+      }
+      else if (err) {
+        return stream.emit('error', err)
+      }
+      else {
+        // decode and push the points
+        var pos = 0
+        data = new Buffer(data)
+        console.log('len', data.length)
+        while (pos < data.length) {
+          var y = self.pointType.read(data, pos); pos += self.pointType.size
+          var x = self.pointType.read(data, pos); pos += self.pointType.size
+          var value = self.valueType.read(data, pos); pos += self.valueType.size
+          stream.push({ x: x, y: y, value: value })
+        }
+        if (!--pending) onDone()
+      }
+    })
+  }
+
+  function nextPoint () {
+    if (done) return
+    x++
+    if (x > bottomRightX) {
+      y++
+      x = topLeftX
+    }
+    if (y > bottomRightY) {
+      console.log('done')
+      done = true
+    }
+  }
+
+  function onDone () {
+    stream.push(null)
+  }
+
+  return stream
 }
 
-function latToMercator (lat) {
-  var y = Math.floor(((pt[1] + 180) / 360) * this.mapSize)
+function latToMercator (lat, mapSize) {
+  var y = Math.floor(((lat + 180) / 360) * mapSize)
   return y
 }
 
-function lonToMercator (lon) {
-  var x = Math.floor(((pt[0] + 85.0511) / 170.1022) * this.mapSize)
+function lonToMercator (lon, mapSize) {
+  var x = Math.floor(((lon + 85.0511) / 170.1022) * mapSize)
   return x
 }
