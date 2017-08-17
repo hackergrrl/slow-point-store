@@ -12,7 +12,8 @@ An idea me and @gmaclennan wanted to try out for storing and querying points
 To anyone else who trods down this path!
 
 The idea was to have a sparse file store of the world, broken down into OSM zoom
-16 tiles (2^16 x 2^16 tiles to cover Earth). Writes would be super fast
+16 tiles (2^16 x 2^16 tiles to cover Earth). (see the [OSM
+docs](http://wiki.openstreetmap.org/wiki/QuadTiles).) Writes would be super fast
 (`fs.appendFile`), and queries should just be scanning for tile files and
 reading them in.
 
