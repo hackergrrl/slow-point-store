@@ -4,7 +4,8 @@ module.exports = FixedGridPointStore
 
 function FixedGridPointStore (pointType, valueType) {
   if (!(this instanceof FixedGridPointStore)) return new FixedGridPointStore()
-  if (!types) throw new Error('must provide "types" parameter')
+  if (!pointType) throw new Error('must provide "pointType" parameter')
+  if (!valueType) throw new Error('must provide "valueType" parameter')
 
   this.pointType = builtinTypes(pointType)
   this.valueType = builtinTypes(valueType)
