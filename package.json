@@ -15,7 +15,8 @@
   },
   "keywords": [],
   "dependencies": {
-    "comparable-storable-types": "^1.0.0"
+    "comparable-storable-types": "^1.0.0",
+    "mkdirp": "^0.5.1"
   },
   "devDependencies": {
     "tape": "~4.6.2",
