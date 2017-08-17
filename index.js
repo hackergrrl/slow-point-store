@@ -24,17 +24,29 @@ function FixedGridPointStore (dir, pointType, valueType, opts) {
   mkdirp.sync(dir)
 }
 
-// TODO: use a subdir for each row
 FixedGridPointStore.prototype.insert = function (pt, value, cb) {
   if (!Array.isArray(pt) || pt.length !== 2) throw new Error('param "pt" must be a 2d array')
 
+  // lat/lon to tile x/y
   var y = Math.floor(((pt[1] + 180) / 360) * this.mapSize)
   var x = Math.floor(((pt[0] + 85.0511) / 170.1022) * this.mapSize)
 
+  // check bounds
   if (x < 0 || x > this.mapSize || y < 0 || y > this.mapSize) {
     return process.nextTick(cb, new Error('point falls outside of map!'))
   }
 
   var filename = path.join(this.dir, y + ',' + x)
+
+  // encode point
+  var data = new Buffer(this.pointType.size * 2 + this.valueType.size)
+  var pos = 0
+  this.pointType.write(data, pt[0], pos); pos += this.pointType.size
+  this.pointType.write(data, pt[1], pos); pos += this.pointType.size
+  this.valueType.write(data, value, pos);
+
+  // TODO: use a subdir for each row
+
+  fs.appendFile(filename, data, 'binary', cb)
 }
 
