@@ -28,8 +28,8 @@ FixedGridPointStore.prototype.insert = function (pt, value, cb) {
   if (!Array.isArray(pt) || pt.length !== 2) throw new Error('param "pt" must be a 2d array')
 
   // lat/lon to tile x/y
-  var y = Math.floor(((pt[1] + 180) / 360) * this.mapSize)
-  var x = Math.floor(((pt[0] + 85.0511) / 170.1022) * this.mapSize)
+  var y = latToMercator(pt[0])
+  var x = lonToMercator(pt[1])
 
   // check bounds
   if (x < 0 || x > this.mapSize || y < 0 || y > this.mapSize) {
@@ -50,3 +50,15 @@ FixedGridPointStore.prototype.insert = function (pt, value, cb) {
   fs.appendFile(filename, data, 'binary', cb)
 }
 
+FixedGridPointStore.prototype.queryStream = function (q, opts) {
+}
+
+function latToMercator (lat) {
+  var y = Math.floor(((pt[1] + 180) / 360) * this.mapSize)
+  return y
+}
+
+function lonToMercator (lon) {
+  var x = Math.floor(((pt[0] + 85.0511) / 170.1022) * this.mapSize)
+  return x
+}
